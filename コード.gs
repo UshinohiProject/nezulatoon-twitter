@@ -1,14 +1,22 @@
-function getTwitterService(serviceName) {
-  return OAuth1.createService(serviceName)
+// 認証用URL取得
+function getOAuthURL() {
+  Logger.log(getTwitterService().authorize());
+}
+ 
+// サービス取得
+function getTwitterService() {
+  return OAuth1.createService('nezulatoon')
     .setAccessTokenUrl('https://api.twitter.com/oauth/access_token')
     .setRequestTokenUrl('https://api.twitter.com/oauth/request_token')
     .setAuthorizationUrl('https://api.twitter.com/oauth/authorize')
-    .setConsumerKey("API_KEY")
-    .setConsumerSecret("API_KEY_SECRET")
-    .setCallbackFunction('authCallback')
+  // 設定した認証情報をセット
+    .setConsumerKey(PropertiesService.getScriptProperties().getProperty("API_KEY"))
+    .setConsumerSecret(PropertiesService.getScriptProperties().getProperty("API_KEY_SECRET"))
+    .setCallbackFunction(PropertiesService.getScriptProperties().getProperty('authCallback'))
+  // 認証情報をプロパティストアにセット（これにより認証解除するまで再認証が不要になる
     .setPropertyStore(PropertiesService.getUserProperties());
 }
-
+//  認証成功時に呼び出される処理を定義
 function authCallback(request) {
   var twitterService = getTwitterService(request.parameter.serviceName);
   var isAuthorized = twitterService.handleCallback(request);
@@ -17,17 +25,4 @@ function authCallback(request) {
   } else {
     return HtmlService.createHtmlOutput('認証がキャンセルされました');
   }
-}
-
-function doGet(e) {
-  var twitterService = getTwitterService(e.parameter.screenName);
-  var template;
-  if (!twitterService.hasAccess()) {
-    var authorizationUrl = twitterService.authorize();
-    template = HtmlService.createTemplateFromFile("index");
-    template.authorizationUrl = authorizationUrl;
-  } else {
-    template = HtmlService.createTemplateFromFile("completed");
-  }
-  return template.evaluate();
 }
